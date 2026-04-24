@@ -1,18 +1,25 @@
-import { useNavigate } from 'react-router';
-import { LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
+import { useNavigate } from 'react-router'
 
 interface NavbarProps {
-  userName: string;
-  userRole: string;
-  roleColor?: string;
+  roleColor?: string
 }
 
-export default function Navbar({ userName, userRole, roleColor = 'bg-blue-100 text-blue-800' }: NavbarProps) {
-  const navigate = useNavigate();
+export default function Navbar({ roleColor = 'bg-blue-100 text-blue-800' }: NavbarProps) {
+  const { usuario, cerrarSesion } = useAuth()
+  const navigate = useNavigate()
 
-  const handleLogout = () => {
-    navigate('/');
-  };
+  const handleLogout = async () => {
+    await cerrarSesion()
+    navigate('/')
+  }
+
+  const rolLabel = usuario?.rol === 'admin'
+    ? 'Administrador'
+    : usuario?.rol === 'operador'
+      ? 'Operador'
+      : 'Pensionado'
 
   return (
     <nav className="h-16 bg-card border-b border-border px-6 flex items-center justify-between">
@@ -22,9 +29,9 @@ export default function Navbar({ userName, userRole, roleColor = 'bg-blue-100 te
       </div>
 
       <div className="flex items-center gap-4">
-        <span>{userName}</span>
+        <span className="text-sm">{usuario?.nombre}</span>
         <span className={`px-3 py-1 rounded-full text-sm ${roleColor}`}>
-          {userRole}
+          {rolLabel}
         </span>
         <button
           onClick={handleLogout}
@@ -35,5 +42,5 @@ export default function Navbar({ userName, userRole, roleColor = 'bg-blue-100 te
         </button>
       </div>
     </nav>
-  );
+  )
 }
