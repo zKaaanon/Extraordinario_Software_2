@@ -101,9 +101,12 @@ export default function AdminDashboard() {
         <Sidebar
           items={sidebarItems}
           activeIndex={0}
-          onItemClick={(index) => {
-            if (index === 1) navigate('/admin/usuarios')
-            if (index === 2) navigate('/admin/pensionados')  // para después
+          onItemClick={(i) => {
+            if (i === 0) navigate('/admin')
+            if (i === 1) navigate('/admin/usuarios')
+            if (i === 2) navigate('/admin/pensionados')
+            if (i === 3) navigate('/admin/configuracion')
+            if (i === 4) navigate('/admin/bitacora')
           }}
         />
 
