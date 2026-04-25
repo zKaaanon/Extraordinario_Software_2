@@ -11,66 +11,61 @@ export default function Login() {
   const [cargando, setCargando] = useState(false)
   const navigate = useNavigate()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setCargando(true)
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setError('')
+  setCargando(true)
 
-    // 1. Autenticar con Supabase
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+  try {
+    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
 
     if (authError || !data.user) {
       setError('Correo o contraseña incorrectos')
-      setCargando(false)
       return
     }
 
-    const userId = data.user.id
-
-    // 2. Verificar si es usuario interno (admin u operador)
     const { data: interno } = await supabase
       .from('usuarios_internos')
       .select('rol, estatus')
-      .eq('user_id', userId)
+      .eq('user_id', data.user.id)
       .single()
 
     if (interno) {
       if (!interno.estatus) {
         await supabase.auth.signOut()
         setError('Tu cuenta está desactivada. Contacta al administrador.')
-        setCargando(false)
         return
       }
       navigate(interno.rol === 'admin' ? '/admin' : '/operador')
       return
     }
 
-    // 3. Verificar si es pensionado
     const { data: pensionado } = await supabase
       .from('pensionados')
       .select('estatus')
-      .eq('user_id', userId)
+      .eq('user_id', data.user.id)
       .single()
 
     if (pensionado) {
       if (pensionado.estatus !== 'activo') {
         await supabase.auth.signOut()
         setError('Tu cuenta está inactiva. Contacta al administrador.')
-        setCargando(false)
         return
       }
       navigate('/pensionado')
       return
     }
 
-    // Si existe en auth pero no en ninguna tabla
     await supabase.auth.signOut()
     setError('No se encontró un perfil asociado a esta cuenta.')
+
+  } catch (err) {
+    console.error('Error en login:', err)
+    setError('Error de conexión. Intenta de nuevo.')
+  } finally {
     setCargando(false)
   }
+}
 
   return (
     <div className="h-screen w-full flex">
