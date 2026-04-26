@@ -5,11 +5,11 @@ import Sidebar from './Sidebar'
 import { supabase } from '../../lib/supabase'
 
 const sidebarItems = [
-  { label: 'Dashboard',     icon: '📊' },
-  { label: 'Usuarios',      icon: '👥' },
-  { label: 'Pensionados',   icon: '👴' },
+  { label: 'Dashboard', icon: '📊' },
+  { label: 'Usuarios', icon: '👥' },
+  { label: 'Pensionados', icon: '👴' },
   { label: 'Configuración', icon: '⚙️' },
-  { label: 'Bitácora',      icon: '📋' },
+  { label: 'Bitácora', icon: '📋' },
 ]
 
 interface Pensionado {
@@ -46,25 +46,25 @@ interface Validacion {
 }
 
 const BADGE_ESTADO: Record<string, string> = {
-  vigente:          'bg-green-100 text-green-800',
+  vigente: 'bg-green-100 text-green-800',
   proxima_a_vencer: 'bg-yellow-100 text-yellow-800',
-  vencida:          'bg-red-100 text-red-800',
-  en_revision:      'bg-blue-100 text-blue-800',
-  sin_fecha:        'bg-gray-100 text-gray-600',
+  vencida: 'bg-red-100 text-red-800',
+  en_revision: 'bg-blue-100 text-blue-800',
+  sin_fecha: 'bg-gray-100 text-gray-600',
 }
 
 const LABEL_ESTADO: Record<string, string> = {
-  vigente:          'Vigente',
+  vigente: 'Vigente',
   proxima_a_vencer: 'Próximo a vencer',
-  vencida:          'Vencido',
-  en_revision:      'En revisión',
-  sin_fecha:        'Sin fecha',
+  vencida: 'Vencido',
+  en_revision: 'En revisión',
+  sin_fecha: 'Sin fecha',
 }
 
 const BADGE_RESULTADO: Record<string, string> = {
-  exitosa:          'bg-green-100 text-green-800',
-  rechazada:        'bg-red-100 text-red-800',
-  en_revision:      'bg-blue-100 text-blue-800',
+  exitosa: 'bg-green-100 text-green-800',
+  rechazada: 'bg-red-100 text-red-800',
+  en_revision: 'bg-blue-100 text-blue-800',
   fuera_de_periodo: 'bg-gray-100 text-gray-600',
 }
 
@@ -72,15 +72,15 @@ export default function ExpedientePensionado() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
-  const [pensionado, setPensionado]   = useState<Pensionado | null>(null)
-  const [documentos, setDocumentos]   = useState<Documento[]>([])
+  const [pensionado, setPensionado] = useState<Pensionado | null>(null)
+  const [documentos, setDocumentos] = useState<Documento[]>([])
   const [validaciones, setValidaciones] = useState<Validacion[]>([])
-  const [cargando, setCargando]       = useState(true)
-  const [tab, setTab]                 = useState<'datos' | 'documentos' | 'historial'>('datos')
+  const [cargando, setCargando] = useState(true)
+  const [tab, setTab] = useState<'datos' | 'documentos' | 'historial'>('datos')
 
   // Modo edición de contacto
-  const [editando, setEditando]   = useState(false)
-  const [contacto, setContacto]   = useState({ correo: '', telefono: '', domicilio: '' })
+  const [editando, setEditando] = useState(false)
+  const [contacto, setContacto] = useState({ correo: '', telefono: '', domicilio: '' })
   const [guardando, setGuardando] = useState(false)
   const [mensajeGuardado, setMensajeGuardado] = useState('')
 
@@ -100,7 +100,18 @@ export default function ExpedientePensionado() {
       setPensionado(pen)
       setContacto({ correo: pen.correo ?? '', telefono: pen.telefono ?? '', domicilio: pen.domicilio ?? '' })
     }
-    setDocumentos(docs ?? [])
+
+    // Generar signed URLs para cada documento (válidas 1 hora)
+    const docsConUrl = await Promise.all(
+      (docs ?? []).map(async doc => {
+        const { data: signed } = await supabase.storage
+          .from('documentos')
+          .createSignedUrl(doc.ruta_archivo, 3600)
+        return { ...doc, ruta_archivo: signed?.signedUrl ?? doc.ruta_archivo }
+      })
+    )
+
+    setDocumentos(docsConUrl)
     setValidaciones(vals ?? [])
     setCargando(false)
   }
@@ -171,8 +182,8 @@ export default function ExpedientePensionado() {
     )
   }
 
-  const badgeClase  = BADGE_ESTADO[pensionado.estado_validacion]  ?? BADGE_ESTADO.sin_fecha
-  const badgeLabel  = LABEL_ESTADO[pensionado.estado_validacion]  ?? 'Sin fecha'
+  const badgeClase = BADGE_ESTADO[pensionado.estado_validacion] ?? BADGE_ESTADO.sin_fecha
+  const badgeLabel = LABEL_ESTADO[pensionado.estado_validacion] ?? 'Sin fecha'
 
   return (
     <div className="h-screen flex flex-col">
@@ -181,7 +192,7 @@ export default function ExpedientePensionado() {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
           items={sidebarItems}
-          activeIndex={4}
+          activeIndex={2}
           onItemClick={i => {
             if (i === 0) navigate('/admin')
             if (i === 1) navigate('/admin/usuarios')
@@ -211,9 +222,8 @@ export default function ExpedientePensionado() {
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${badgeClase}`}>
                     {badgeLabel}
                   </span>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    pensionado.estatus === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                  }`}>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${pensionado.estatus === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                    }`}>
                     {pensionado.estatus === 'activo' ? 'Activo' : 'Inactivo'}
                   </span>
                 </div>
@@ -222,11 +232,10 @@ export default function ExpedientePensionado() {
 
             <button
               onClick={toggleEstatus}
-              className={`px-4 py-2 rounded-lg text-sm transition-colors ${
-                pensionado.estatus === 'activo'
+              className={`px-4 py-2 rounded-lg text-sm transition-colors ${pensionado.estatus === 'activo'
                   ? 'border border-destructive text-destructive hover:bg-destructive/10'
                   : 'border border-green-600 text-green-600 hover:bg-green-50'
-              }`}
+                }`}
             >
               {pensionado.estatus === 'activo' ? 'Dar de baja' : 'Reactivar'}
             </button>
@@ -264,11 +273,10 @@ export default function ExpedientePensionado() {
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  tab === t
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === t
                     ? 'border-primary text-primary'
                     : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
+                  }`}
               >
                 {t === 'datos' ? 'Datos personales' : t === 'documentos' ? 'Documentos' : 'Historial de validaciones'}
               </button>
@@ -444,9 +452,8 @@ export default function ExpedientePensionado() {
                             {new Date(v.fecha_validacion).toLocaleString('es-MX')}
                           </td>
                           <td className="px-6 py-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              BADGE_RESULTADO[v.resultado] ?? 'bg-gray-100 text-gray-600'
-                            }`}>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${BADGE_RESULTADO[v.resultado] ?? 'bg-gray-100 text-gray-600'
+                              }`}>
                               {v.resultado.replace('_', ' ')}
                             </span>
                           </td>

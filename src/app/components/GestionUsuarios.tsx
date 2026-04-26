@@ -160,11 +160,12 @@ export default function GestionUsuarios() {
         <Sidebar
           items={sidebarItems}
           activeIndex={1}
-          onItemClick={(index) => {
-            if (index === 0) navigate('/admin')
-            if (index === 2) navigate('/admin/pensionados')
-            if (index === 3) navigate('/admin/configuracion')
-            if (index === 4) navigate('/admin/bitacora')
+          onItemClick={(i) => {
+            if (i === 0) navigate('/admin')
+            if (i === 1) navigate('/admin/usuarios')
+            if (i === 2) navigate('/admin/pensionados')
+            if (i === 3) navigate('/admin/configuracion')
+            if (i === 4) navigate('/admin/bitacora')
           }}
         />
 

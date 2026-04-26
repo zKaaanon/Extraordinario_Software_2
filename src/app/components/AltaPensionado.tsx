@@ -5,22 +5,22 @@ import Sidebar from './Sidebar'
 import { supabase } from '../../lib/supabase'
 
 const sidebarItems = [
-  { label: 'Dashboard',     icon: '📊' },
-  { label: 'Usuarios',      icon: '👥' },
-  { label: 'Pensionados',   icon: '👴' },
+  { label: 'Dashboard', icon: '📊' },
+  { label: 'Usuarios', icon: '👥' },
+  { label: 'Pensionados', icon: '👴' },
   { label: 'Configuración', icon: '⚙️' },
-  { label: 'Bitácora',      icon: '📋' },
+  { label: 'Bitácora', icon: '📋' },
 ]
 
 const FORM_VACIO = {
-  nombre_completo:    '',
-  curp:               '',
-  numero_pensionado:  '',
-  fecha_nacimiento:   '',
-  telefono:           '',
-  correo:             '',
-  password:           '',
-  domicilio:          '',
+  nombre_completo: '',
+  curp: '',
+  numero_pensionado: '',
+  fecha_nacimiento: '',
+  telefono: '',
+  correo: '',
+  password: '',
+  domicilio: '',
   fecha_inicio_pension: '',
 }
 
@@ -29,12 +29,12 @@ const MAX_MB = 5
 
 export default function AltaPensionado() {
   const navigate = useNavigate()
-  const [form, setForm]           = useState(FORM_VACIO)
-  const [archivo, setArchivo]     = useState<File | null>(null)
+  const [form, setForm] = useState(FORM_VACIO)
+  const [archivo, setArchivo] = useState<File | null>(null)
   const [errorArchivo, setErrorArchivo] = useState('')
   const [guardando, setGuardando] = useState(false)
-  const [error, setError]         = useState('')
-  const [paso, setPaso]           = useState<'formulario' | 'exito'>('formulario')
+  const [error, setError] = useState('')
+  const [paso, setPaso] = useState<'formulario' | 'exito'>('formulario')
   const [pensionadoId, setPensionadoId] = useState('')
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
@@ -81,14 +81,14 @@ export default function AltaPensionado() {
       // 1. Crear pensionado vía Edge Function
       const { data: fnData, error: fnErr } = await supabase.functions.invoke('crear-pensionado', {
         body: {
-          nombre_completo:     form.nombre_completo.trim(),
-          curp:                form.curp.trim().toUpperCase(),
-          numero_pensionado:   form.numero_pensionado.trim(),
-          fecha_nacimiento:    form.fecha_nacimiento,
-          telefono:            form.telefono.trim(),
-          correo:              form.correo.trim(),
-          password:            form.password,
-          domicilio:           form.domicilio.trim(),
+          nombre_completo: form.nombre_completo.trim(),
+          curp: form.curp.trim().toUpperCase(),
+          numero_pensionado: form.numero_pensionado.trim(),
+          fecha_nacimiento: form.fecha_nacimiento,
+          telefono: form.telefono.trim(),
+          correo: form.correo.trim(),
+          password: form.password,
+          domicilio: form.domicilio.trim(),
           fecha_inicio_pension: form.fecha_inicio_pension,
         }
       })
@@ -101,35 +101,33 @@ export default function AltaPensionado() {
       const { pensionado_id } = fnData
       setPensionadoId(pensionado_id)
 
-      // 2. Subir credencial a Storage
-      const ext      = archivo.name.split('.').pop()
-      const rutaBlob = `${pensionado_id}/credencial.${ext}`
+      // 2. Subir credencial a Storage con nomenclatura correcta
+      const ext = archivo.name.split('.').pop()
+      const fechaStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+      const nombreArchivo = `${pensionado_id}-${fechaStr}-credencial.${ext}`
+      const rutaBlob = `${pensionado_id}/${nombreArchivo}`
 
       const { error: storageErr } = await supabase.storage
         .from('documentos')
         .upload(rutaBlob, archivo, { upsert: true })
 
       if (storageErr) {
-        setError('Pensionado creado pero hubo un error al subir la credencial: ' + storageErr.message)
+        setError('Pensionado creado pero error al subir credencial: ' + storageErr.message)
         return
       }
 
-      // 3. Registrar documento en tabla documentos
-      const { data: urlData } = supabase.storage
-        .from('documentos')
-        .getPublicUrl(rutaBlob)
-
+      // 3. Registrar documento — guardamos la ruta relativa, no la URL pública
       await supabase.from('documentos').insert({
-        pensionado_id:  pensionado_id,
+        pensionado_id,
         tipo_documento: 'credencial',
-        nombre_archivo: archivo.name,
-        ruta_archivo:   urlData.publicUrl,
+        nombre_archivo: nombreArchivo,
+        ruta_archivo: rutaBlob,   // ruta relativa dentro del bucket
       })
 
       // 4. Bitácora
       await supabase.rpc('registrar_bitacora', {
-        p_accion:      'alta_pensionado',
-        p_tabla:       'pensionados',
+        p_accion: 'alta_pensionado',
+        p_tabla: 'pensionados',
         p_registro_id: pensionado_id,
         p_descripcion: `Alta de pensionado: ${form.nombre_completo} | CURP: ${form.curp.toUpperCase()}`,
       })
@@ -155,6 +153,9 @@ export default function AltaPensionado() {
             onItemClick={(i) => {
               if (i === 0) navigate('/admin')
               if (i === 1) navigate('/admin/usuarios')
+              if (i === 2) navigate('/admin/pensionados')
+              if (i === 3) navigate('/admin/configuracion')
+              if (i === 4) navigate('/admin/bitacora')
             }}
           />
           <main className="flex-1 flex items-center justify-center p-8">
@@ -304,9 +305,8 @@ export default function AltaPensionado() {
               <h2 className="text-base font-medium mb-1">Credencial oficial <span className="text-destructive">*</span></h2>
               <p className="text-xs text-muted-foreground mb-4">JPG, PNG o PDF — máximo 5 MB</p>
 
-              <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                archivo ? 'border-green-400 bg-green-50' : 'border-border hover:bg-accent/50'
-              }`}>
+              <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${archivo ? 'border-green-400 bg-green-50' : 'border-border hover:bg-accent/50'
+                }`}>
                 <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.pdf" onChange={handleArchivo} />
                 {archivo ? (
                   <>
