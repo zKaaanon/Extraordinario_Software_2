@@ -79,7 +79,7 @@ export default function AltaPensionado() {
 
     try {
       // 1. Crear pensionado vía Edge Function
-      const { data: fnData, error: fnErr } = await supabase.functions.invoke('crear-pensionado', {
+      const { data: fnRaw, error: fnErr } = await supabase.functions.invoke('crear-pensionado', {
         body: {
           nombre_completo: form.nombre_completo.trim(),
           curp: form.curp.trim().toUpperCase(),
@@ -98,7 +98,15 @@ export default function AltaPensionado() {
         return
       }
 
-      const { pensionado_id } = fnData
+      // Parsear la respuesta — puede llegar como string o como objeto
+      const fnData = typeof fnRaw === 'string' ? JSON.parse(fnRaw) : fnRaw
+
+      if (!fnData?.ok || !fnData?.pensionado_id) {
+        setError('Error al registrar: ' + (fnData?.error ?? 'Respuesta inesperada de la función'))
+        return
+      }
+
+      const pensionado_id: string = fnData.pensionado_id
       setPensionadoId(pensionado_id)
 
       // 2. Subir credencial a Storage con nomenclatura correcta
