@@ -192,7 +192,6 @@ export default function AdminDashboard() {
                           </td>
                           <td className="px-6 py-4 text-sm">{fecha}</td>
                           <td className="px-6 py-4 text-sm">
-                            <button className="text-primary hover:underline">Ver expediente</button>
                           </td>
                         </tr>
                       )

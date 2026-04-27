@@ -10,7 +10,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   usuario: null,
   cargando: true,
-  cerrarSesion: async () => {},
+  cerrarSesion: async () => { },
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -45,24 +45,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    // Sesión inicial al cargar la app
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const u = await resolverUsuario(session.user.id, session.user.email ?? '')
-        setUsuario(u)
+      try {
+        if (session?.user) {
+          const u = await resolverUsuario(session.user.id, session.user.email ?? '')
+          setUsuario(u)
+        }
+      } catch (err) {
+        console.error('Error resolviendo sesión inicial:', err)
+        setUsuario(null)
+      } finally {
+        setCargando(false)
       }
-      setCargando(false)
     })
 
-    // Escuchar cambios de sesión (login/logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        const u = await resolverUsuario(session.user.id, session.user.email ?? '')
-        setUsuario(u)
-      } else {
+      try {
+        if (session?.user) {
+          const u = await resolverUsuario(session.user.id, session.user.email ?? '')
+          setUsuario(u)
+        } else {
+          setUsuario(null)
+        }
+      } catch (err) {
+        console.error('Error en cambio de sesión:', err)
         setUsuario(null)
+      } finally {
+        setCargando(false)
       }
-      setCargando(false)
     })
 
     return () => subscription.unsubscribe()
