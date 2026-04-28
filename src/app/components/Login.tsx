@@ -11,65 +11,67 @@ export default function Login() {
   const [cargando, setCargando] = useState(false)
   const navigate = useNavigate()
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault()
-  setError('')
-  setCargando(true)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setCargando(true)
 
-  try {
-    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    if (authError || !data.user) {
-      setError('Correo o contraseña incorrectos')
-      return
-    }
-
-    const { data: interno } = await supabase
-      .from('usuarios_internos')
-      .select('rol, estatus')
-      .eq('user_id', data.user.id)
-      .single()
-
-    if (interno) {
-      if (!interno.estatus) {
-        await supabase.auth.signOut()
-        setError('Tu cuenta está desactivada. Contacta al administrador.')
+      if (authError || !data.user) {
+        setError('Correo o contraseña incorrectos')
         return
       }
-      navigate(interno.rol === 'admin' ? '/admin' : '/operador')
-      return
-    }
 
-    const { data: pensionado } = await supabase
-      .from('pensionados')
-      .select('estatus')
-      .eq('user_id', data.user.id)
-      .single()
+      const { data: interno } = await supabase
+        .from('usuarios_internos')
+        .select('rol, estatus')
+        .eq('user_id', data.user.id)
+        .single()
 
-    if (pensionado) {
-      if (pensionado.estatus !== 'activo') {
-        await supabase.auth.signOut()
-        setError('Tu cuenta está inactiva. Contacta al administrador.')
+      if (interno) {
+        if (!interno.estatus) {
+          await supabase.auth.signOut()
+          setError('Tu cuenta está desactivada. Contacta al administrador.')
+          return
+        }
+        navigate(interno.rol === 'admin' ? '/admin' : '/operador')
         return
       }
-      navigate('/pensionado')
-      return
+
+      const { data: pensionado } = await supabase
+        .from('pensionados')
+        .select('estatus')
+        .eq('user_id', data.user.id)
+        .single()
+
+      if (pensionado) {
+        if (pensionado.estatus !== 'activo') {
+          await supabase.auth.signOut()
+          setError('Tu cuenta está inactiva. Contacta al administrador.')
+          return
+        }
+        navigate('/pensionado')
+        return
+      }
+
+      await supabase.auth.signOut()
+      setError('No se encontró un perfil asociado a esta cuenta.')
+    } catch (err) {
+      console.error('Error en login:', err)
+      setError('Error de conexión. Intenta de nuevo.')
+    } finally {
+      setCargando(false)
     }
-
-    await supabase.auth.signOut()
-    setError('No se encontró un perfil asociado a esta cuenta.')
-
-  } catch (err) {
-    console.error('Error en login:', err)
-    setError('Error de conexión. Intenta de nuevo.')
-  } finally {
-    setCargando(false)
   }
-}
 
   return (
     <div className="h-screen w-full flex">
-      {/* Panel izquierdo */}
+      {/* Left panel */}
       <div className="w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
         <div className="text-white text-center px-12">
           <div className="text-7xl mb-6">🏛️</div>
@@ -78,7 +80,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         </div>
       </div>
 
-      {/* Panel derecho */}
+      {/* Right panel */}
       <div className="w-1/2 flex items-center justify-center bg-background p-8">
         <div className="w-full max-w-md">
           <div className="mb-8">
@@ -100,6 +102,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 placeholder="correo@ejemplo.com"
                 required
                 disabled={cargando}
+                autoComplete="email"
               />
             </div>
 
@@ -117,11 +120,13 @@ const handleSubmit = async (e: React.FormEvent) => {
                   placeholder="••••••••"
                   required
                   disabled={cargando}
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>

@@ -25,3 +25,15 @@ export interface UsuarioSesion {
   nombre: string
   rol: Rol
 }
+
+export async function limpiarStorageSesion(): Promise<void> {
+  try {
+    const keysToRemove = Object.keys(localStorage).filter((k) =>
+      k.startsWith('sb-') && k.endsWith('-auth-token')
+    )
+    keysToRemove.forEach((k) => localStorage.removeItem(k))
+
+    await supabase.auth.signOut({ scope: 'local' })
+  } catch {
+  }
+}
