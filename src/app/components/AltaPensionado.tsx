@@ -22,6 +22,8 @@ const FORM_VACIO = {
   password: '',
   domicilio: '',
   fecha_inicio_pension: '',
+  fecha_ultima_validacion: '',
+  fecha_proxima_validacion: '',
 }
 
 const TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'application/pdf']
@@ -36,6 +38,7 @@ export default function AltaPensionado() {
   const [error, setError] = useState('')
   const [paso, setPaso] = useState<'formulario' | 'exito'>('formulario')
   const [pensionadoId, setPensionadoId] = useState('')
+  const [mostrarFechas, setMostrarFechas] = useState(false)
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -90,6 +93,8 @@ export default function AltaPensionado() {
           password: form.password,
           domicilio: form.domicilio.trim(),
           fecha_inicio_pension: form.fecha_inicio_pension,
+          fecha_ultima_validacion: form.fecha_ultima_validacion || undefined,
+          fecha_proxima_validacion: form.fecha_proxima_validacion || undefined,
         }
       })
 
@@ -307,6 +312,54 @@ export default function AltaPensionado() {
                 </div>
               </div>
             </div>
+
+{/* Fechas de validación (opcional) */}
+<div className="bg-card border border-border rounded-xl overflow-hidden">
+  <button
+    type="button"
+    onClick={() => setMostrarFechas(!mostrarFechas)}
+    className="w-full flex items-center justify-between px-6 py-4 hover:bg-accent/50 transition-colors"
+  >
+    <div>
+      <h2 className="text-base font-medium text-left">Fechas de validación</h2>
+      <p className="text-xs text-muted-foreground text-left">
+        Opcional — si no se especifican, se calculan automáticamente
+      </p>
+    </div>
+    <span className="text-muted-foreground text-sm">
+      {mostrarFechas ? '▲' : '▼'}
+    </span>
+  </button>
+
+  {mostrarFechas && (
+    <div className="px-6 pb-6 pt-2 grid grid-cols-2 gap-4 border-t border-border">
+      <div>
+        <label className="block text-sm mb-1">Última validación</label>
+        <input
+          name="fecha_ultima_validacion"
+          type="date"
+          value={form.fecha_ultima_validacion}
+          onChange={handleChange}
+          className="w-full px-3 py-2 bg-input-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+      </div>
+      <div>
+        <label className="block text-sm mb-1">Próxima validación</label>
+        <input
+          name="fecha_proxima_validacion"
+          type="date"
+          value={form.fecha_proxima_validacion}
+          onChange={handleChange}
+          className="w-full px-3 py-2 bg-input-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+      </div>
+      <p className="col-span-2 text-xs text-muted-foreground">
+        💡 Para probar estados: usa una fecha próxima pasada (vencida), 
+        o una futura cercana (próxima a vencer), o una futura lejana (vigente).
+      </p>
+    </div>
+  )}
+</div>
 
             {/* Credencial */}
             <div className="bg-card border border-border rounded-xl p-6">

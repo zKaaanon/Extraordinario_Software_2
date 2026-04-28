@@ -61,8 +61,6 @@ export default function OperatorDashboard() {
   return (
     <div className="h-screen flex flex-col">
       <Navbar
-        userName="Operador"
-        userRole="Operador"
         roleColor="bg-blue-100 text-blue-800"
       />
 
