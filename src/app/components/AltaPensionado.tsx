@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase'
 const sidebarItems = [
   { label: 'Dashboard', icon: '📊' },
   { label: 'Usuarios', icon: '👥' },
+  { label: 'Validaciones', icon: '✅' },
   { label: 'Pensionados', icon: '👴' },
   { label: 'Configuración', icon: '⚙️' },
   { label: 'Bitácora', icon: '📋' },
@@ -164,11 +165,12 @@ export default function AltaPensionado() {
             items={sidebarItems}
             activeIndex={2}
             onItemClick={(i) => {
-              if (i === 0) navigate('/admin')
-              if (i === 1) navigate('/admin/usuarios')
-              if (i === 2) navigate('/admin/pensionados')
-              if (i === 3) navigate('/admin/configuracion')
-              if (i === 4) navigate('/admin/bitacora')
+            if (i === 0) navigate('/admin')
+            if (i === 1) navigate('/admin/usuarios')
+            if (i === 2) navigate('/admin/validaciones')
+            if (i === 3) navigate('/admin/pensionados')
+            if (i === 4) navigate('/admin/configuracion')
+            if (i === 5) navigate('/admin/bitacora')
             }}
           />
           <main className="flex-1 flex items-center justify-center p-8">

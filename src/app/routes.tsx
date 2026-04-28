@@ -10,6 +10,7 @@ import AltaPensionado from './components/AltaPensionado'
 import ExpedientePensionado from './components/ExpedientePensionado'
 import Bitacora from './components/Bitacora'
 import Configuracion from './components/Configuracion'
+import ValidacionesPendientes from './components/ValidacionesPendientes'
 
 export const router = createBrowserRouter([
   {
@@ -53,6 +54,14 @@ export const router = createBrowserRouter([
     element: (
       <RutaProtegida rol="admin">
         <ExpedientePensionado />
+      </RutaProtegida>
+    ),
+  },
+  {
+    path: '/admin/validaciones',
+    element: (
+      <RutaProtegida rol="admin">
+        <ValidacionesPendientes />
       </RutaProtegida>
     ),
   },

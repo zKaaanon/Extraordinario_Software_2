@@ -6,11 +6,12 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 
 const sidebarItems = [
-  { label: 'Dashboard',     icon: '📊' },
-  { label: 'Usuarios',      icon: '👥' },
-  { label: 'Pensionados',   icon: '👴' },
+  { label: 'Dashboard', icon: '📊' },
+  { label: 'Usuarios', icon: '👥' },
+  { label: 'Validaciones', icon: '✅' },
+  { label: 'Pensionados', icon: '👴' },
   { label: 'Configuración', icon: '⚙️' },
-  { label: 'Bitácora',      icon: '📋' },
+  { label: 'Bitácora', icon: '📋' },
 ]
 
 interface Config {
@@ -98,13 +99,14 @@ export default function Configuracion() {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
           items={sidebarItems}
-          activeIndex={3}
+          activeIndex={4}
           onItemClick={i => {
             if (i === 0) navigate('/admin')
             if (i === 1) navigate('/admin/usuarios')
-            if (i === 2) navigate('/admin/pensionados')
-            if (i === 3) navigate('/admin/configuracion')
-            if (i === 4) navigate('/admin/bitacora')
+            if (i === 2) navigate('/admin/validaciones')
+            if (i === 3) navigate('/admin/pensionados')
+            if (i === 4) navigate('/admin/configuracion')
+            if (i === 5) navigate('/admin/bitacora')
           }}
         />
 
