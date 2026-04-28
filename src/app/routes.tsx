@@ -1,16 +1,24 @@
 import { createBrowserRouter } from 'react-router'
 import Login from './components/Login'
-import AdminDashboard from './components/AdminDashboard'
-import OperatorDashboard from './components/OperatorDashboard'
-import PensionerDashboard from './components/PensionerDashboard'
 import RutaProtegida from './components/RutaProtegida'
+
+// ── Admin
+import AdminDashboard from './components/AdminDashboard'
 import GestionUsuarios from './components/GestionUsuarios'
 import ListaPensionados from './components/ListaPensionados'
 import AltaPensionado from './components/AltaPensionado'
 import ExpedientePensionado from './components/ExpedientePensionado'
-import Bitacora from './components/Bitacora'
-import Configuracion from './components/Configuracion'
 import ValidacionesPendientes from './components/ValidacionesPendientes'
+import Configuracion from './components/Configuracion'
+import Bitacora from './components/Bitacora'
+
+// ── Operador
+import OperatorDashboard from './components/OperatorDashboard'
+import ExpedienteOperador from './components/ExpedienteOperador'
+import ValidacionesOperador from './components/ValidacionesOperador'
+
+// ── Pensionado
+import PensionerDashboard from './components/PensionerDashboard'
 
 export const router = createBrowserRouter([
   {
@@ -86,6 +94,22 @@ export const router = createBrowserRouter([
     element: (
       <RutaProtegida rol="operador">
         <OperatorDashboard />
+      </RutaProtegida>
+    ),
+  },
+  {
+    path: '/operador/pensionados/:id',
+    element: (
+      <RutaProtegida rol="operador">
+        <ExpedienteOperador />
+      </RutaProtegida>
+    ),
+  },
+  {
+    path: '/operador/validaciones',
+    element: (
+      <RutaProtegida rol="operador">
+        <ValidacionesOperador />
       </RutaProtegida>
     ),
   },
