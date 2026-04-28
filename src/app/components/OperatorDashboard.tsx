@@ -1,139 +1,257 @@
-import { useState } from 'react';
-import Navbar from './Navbar';
-import Sidebar from './Sidebar';
-import { Search } from 'lucide-react';
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router'
+import Navbar from './Navbar'
+import Sidebar from './Sidebar'
+import StatsCard from './StatsCard'
+import { supabase } from '../../lib/supabase'
+
+// ─── Sidebar ─────────────────────────────────────────────────────────────────
 
 const sidebarItems = [
-  { label: 'Pensionados', icon: '👴' },
-  { label: 'Validaciones pendientes', icon: '⏳' },
-];
+  { label: 'Pensionados',   icon: '👴' },
+  { label: 'Validaciones',  icon: '✅' },
+]
 
-const pensionadosData = [
-  {
-    nombre: 'Juan Pérez García',
-    curp: 'PEGJ750815HDFRRL01',
-    numero: 'P-2024-001',
-    estado: 'Vigente',
-    estadoColor: 'bg-green-100 text-green-800',
-    proximaValidacion: '2026-10-15',
-    ultimaValidacion: '2025-10-15',
-  },
-  {
-    nombre: 'María López Rodríguez',
-    curp: 'LORM820520MDFRRD05',
-    numero: 'P-2024-002',
-    estado: 'Próximo a vencer',
-    estadoColor: 'bg-yellow-100 text-yellow-800',
-    proximaValidacion: '2026-05-20',
-    ultimaValidacion: '2025-05-20',
-  },
-  {
-    nombre: 'Carlos Ramírez Sánchez',
-    curp: 'RASC790312HDFRRL03',
-    numero: 'P-2024-003',
-    estado: 'En revisión',
-    estadoColor: 'bg-blue-100 text-blue-800',
-    proximaValidacion: '2026-08-10',
-    ultimaValidacion: '2025-08-10',
-  },
-  {
-    nombre: 'Ana Martínez Flores',
-    curp: 'MAFA850925MDFRRL07',
-    numero: 'P-2024-004',
-    estado: 'Vencido',
-    estadoColor: 'bg-red-100 text-red-800',
-    proximaValidacion: '2026-03-01',
-    ultimaValidacion: '2025-03-01',
-  },
-];
+// ─── Tipos ───────────────────────────────────────────────────────────────────
+
+type EstadoValidacion = 'vigente' | 'proxima_a_vencer' | 'vencida' | 'en_revision' | 'sin_fecha'
+
+interface PensionadoFila {
+  id: string
+  nombre_completo: string
+  curp: string
+  numero_pensionado: string
+  correo: string
+  estado_validacion: EstadoValidacion
+  fecha_proxima_validacion: string | null
+  fecha_ultima_validacion: string | null
+  estatus: string
+}
+
+const BADGE: Record<EstadoValidacion, { label: string; clase: string }> = {
+  vigente:          { label: 'Vigente',           clase: 'bg-green-100 text-green-800' },
+  proxima_a_vencer: { label: 'Próximo a vencer',  clase: 'bg-yellow-100 text-yellow-800' },
+  vencida:          { label: 'Vencido',            clase: 'bg-red-100 text-red-800' },
+  en_revision:      { label: 'En revisión',        clase: 'bg-blue-100 text-blue-800' },
+  sin_fecha:        { label: 'Sin fecha',          clase: 'bg-gray-100 text-gray-600' },
+}
+
+// ─── Componente ──────────────────────────────────────────────────────────────
 
 export default function OperatorDashboard() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterEstado, setFilterEstado] = useState('Todos');
+  const navigate = useNavigate()
 
-  const filteredData = pensionadosData.filter(p => {
-    const matchesSearch = p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          p.curp.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterEstado === 'Todos' || p.estado === filterEstado;
-    return matchesSearch && matchesFilter;
-  });
+  const [pensionados,   setPensionados]   = useState<PensionadoFila[]>([])
+  const [cargando,      setCargando]      = useState(true)
+  const [busqueda,      setBusqueda]      = useState('')
+  const [filtroEstado,  setFiltroEstado]  = useState('todos')
+  const [filtroFecha,   setFiltroFecha]   = useState('')   // ISO date string YYYY-MM-DD
+
+  useEffect(() => { cargarDatos() }, [])
+
+  async function cargarDatos() {
+    setCargando(true)
+    const { data, error } = await supabase
+      .from('v_pensionados_estado')
+      .select('id, nombre_completo, curp, numero_pensionado, correo, estado_validacion, fecha_proxima_validacion, fecha_ultima_validacion, estatus')
+      .eq('estatus', 'activo')
+      .order('nombre_completo')
+
+    if (error) { console.error(error); setCargando(false); return }
+    setPensionados(data ?? [])
+    setCargando(false)
+  }
+
+  // ── Contadores para tarjetas ──────────────────────────────────────────────
+
+  const proximos  = pensionados.filter(p => p.estado_validacion === 'proxima_a_vencer').length
+  const vencidos  = pensionados.filter(p => p.estado_validacion === 'vencida').length
+  const revision  = pensionados.filter(p => p.estado_validacion === 'en_revision').length
+
+  // ── Filtrado ──────────────────────────────────────────────────────────────
+
+  const filtrados = pensionados.filter(p => {
+    const q = busqueda.toLowerCase()
+    const coincideBusqueda =
+      p.nombre_completo.toLowerCase().includes(q) ||
+      p.curp.toLowerCase().includes(q) ||
+      p.numero_pensionado.toLowerCase().includes(q)
+
+    const coincideEstado = filtroEstado === 'todos' || p.estado_validacion === filtroEstado
+
+    const coincideFecha = !filtroFecha || (
+      p.fecha_proxima_validacion
+        ? p.fecha_proxima_validacion.startsWith(filtroFecha)
+        : false
+    )
+
+    return coincideBusqueda && coincideEstado && coincideFecha
+  })
+
+  // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="h-screen flex flex-col">
-      <Navbar
-        roleColor="bg-blue-100 text-blue-800"
-      />
+      <Navbar roleColor="bg-blue-100 text-blue-800" />
 
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar items={sidebarItems} activeIndex={0} />
+        <Sidebar
+          items={sidebarItems}
+          activeIndex={0}
+          onItemClick={i => {
+            if (i === 0) navigate('/operador')
+            if (i === 1) navigate('/operador/validaciones')
+          }}
+        />
 
         <main className="flex-1 overflow-y-auto p-8">
-          <h1 className="mb-8">Gestión de Pensionados</h1>
 
-          <div className="flex gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
-              <input
-                type="text"
-                placeholder="Buscar por nombre o CURP..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-input-background rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-
-            <select
-              value={filterEstado}
-              onChange={(e) => setFilterEstado(e.target.value)}
-              className="px-4 py-3 bg-input-background rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+          <div className="flex items-center justify-between mb-8">
+            <h1>Seguimiento de pensionados</h1>
+            <button
+              onClick={cargarDatos}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              <option>Todos</option>
-              <option>Vigente</option>
-              <option>Próximo a vencer</option>
-              <option>En revisión</option>
-              <option>Vencido</option>
-            </select>
+              ↻ Actualizar
+            </button>
           </div>
 
-          <div className="bg-card border border-border rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="px-6 py-4 text-left">Nombre completo</th>
-                    <th className="px-6 py-4 text-left">CURP</th>
-                    <th className="px-6 py-4 text-left">Número pensionado</th>
-                    <th className="px-6 py-4 text-left">Estado</th>
-                    <th className="px-6 py-4 text-left">Fecha próx. validación</th>
-                    <th className="px-6 py-4 text-left">Última validación</th>
-                    <th className="px-6 py-4 text-left">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredData.map((pensionado, index) => (
-                    <tr key={index} className="border-t border-border hover:bg-accent/50">
-                      <td className="px-6 py-4">{pensionado.nombre}</td>
-                      <td className="px-6 py-4 text-muted-foreground">{pensionado.curp}</td>
-                      <td className="px-6 py-4">{pensionado.numero}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-sm ${pensionado.estadoColor}`}>
-                          {pensionado.estado}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">{pensionado.proximaValidacion}</td>
-                      <td className="px-6 py-4 text-muted-foreground">{pensionado.ultimaValidacion}</td>
-                      <td className="px-6 py-4">
-                        <button className="text-primary hover:underline mr-3">Revisar</button>
-                        <button className="text-primary hover:underline">Validar</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* Tarjetas de resumen — solo las relevantes para el operador */}
+          <div className="grid grid-cols-3 gap-6 mb-8">
+            <StatsCard
+              title="Próximos a vencer"
+              value={proximos}
+              icon="⚠️"
+              bgColor="bg-yellow-100"
+              textColor="text-yellow-600"
+            />
+            <StatsCard
+              title="Vencidos"
+              value={vencidos}
+              icon="❌"
+              bgColor="bg-red-100"
+              textColor="text-red-600"
+            />
+            <StatsCard
+              title="En revisión"
+              value={revision}
+              icon="🔍"
+              bgColor="bg-blue-100"
+              textColor="text-blue-600"
+            />
+          </div>
+
+          {/* Filtros — RF-33 */}
+          <div className="flex gap-3 mb-4 flex-wrap">
+            <input
+              type="text"
+              placeholder="Buscar por nombre, CURP o número..."
+              value={busqueda}
+              onChange={e => setBusqueda(e.target.value)}
+              className="flex-1 min-w-56 px-4 py-2 bg-input-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <select
+              value={filtroEstado}
+              onChange={e => setFiltroEstado(e.target.value)}
+              className="px-4 py-2 bg-input-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="todos">Todos los estados</option>
+              <option value="proxima_a_vencer">Próximo a vencer</option>
+              <option value="vencida">Vencido</option>
+              <option value="en_revision">En revisión</option>
+              <option value="vigente">Vigente</option>
+            </select>
+            {/* Filtro por fecha próxima validación — RF-33 */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-muted-foreground whitespace-nowrap">Próx. val.:</label>
+              <input
+                type="date"
+                value={filtroFecha}
+                onChange={e => setFiltroFecha(e.target.value)}
+                className="px-3 py-2 bg-input-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              {filtroFecha && (
+                <button
+                  onClick={() => setFiltroFecha('')}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  ✕
+                </button>
+              )}
             </div>
           </div>
+
+          {/* Tabla */}
+          <div className="bg-card border border-border rounded-lg overflow-hidden">
+            {cargando ? (
+              <div className="p-12 text-center text-muted-foreground">Cargando pensionados...</div>
+            ) : filtrados.length === 0 ? (
+              <div className="p-12 text-center text-muted-foreground">
+                {busqueda || filtroEstado !== 'todos' || filtroFecha
+                  ? 'No se encontraron resultados con ese filtro.'
+                  : 'No hay pensionados activos registrados.'}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm">Nombre completo</th>
+                      <th className="px-6 py-4 text-left text-sm">CURP</th>
+                      <th className="px-6 py-4 text-left text-sm">Número</th>
+                      <th className="px-6 py-4 text-left text-sm">Estado</th>
+                      <th className="px-6 py-4 text-left text-sm">Próx. validación</th>
+                      <th className="px-6 py-4 text-left text-sm">Última validación</th>
+                      <th className="px-6 py-4 text-left text-sm">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtrados.map(p => {
+                      const badge = BADGE[p.estado_validacion] ?? BADGE.sin_fecha
+                      return (
+                        <tr key={p.id} className="border-t border-border hover:bg-accent/50">
+                          <td className="px-6 py-4 text-sm font-medium">{p.nombre_completo}</td>
+                          <td className="px-6 py-4 text-sm text-muted-foreground font-mono">{p.curp}</td>
+                          <td className="px-6 py-4 text-sm">{p.numero_pensionado}</td>
+                          <td className="px-6 py-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${badge.clase}`}>
+                              {badge.label}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            {p.fecha_proxima_validacion
+                              ? new Date(p.fecha_proxima_validacion).toLocaleDateString('es-MX')
+                              : '—'}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-muted-foreground">
+                            {p.fecha_ultima_validacion
+                              ? new Date(p.fecha_ultima_validacion).toLocaleDateString('es-MX')
+                              : '—'}
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <button
+                              onClick={() => navigate(`/operador/pensionados/${p.id}`)}
+                              className="text-primary hover:underline"
+                            >
+                              Ver expediente
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {!cargando && filtrados.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-3">
+              Mostrando {filtrados.length} de {pensionados.length} pensionados activos
+            </p>
+          )}
         </main>
       </div>
     </div>
-  );
+  )
 }
