@@ -28,8 +28,8 @@
 ```
 src/
 ├── app/
-│   ├── App.tsx                  # Raíz de la aplicación
-│   ├── routes.tsx               # Definición de rutas
+│   ├── App.tsx
+│   ├── routes.tsx
 │   └── components/
 │       ├── Login.tsx
 │       ├── Navbar.tsx
@@ -41,31 +41,32 @@ src/
 │       │   ├── AdminDashboard.tsx
 │       │   ├── GestionUsuarios.tsx
 │       │   ├── ListaPensionados.tsx
-│       │   ├── AltaPensionado.tsx
-│       │   ├── ExpedientePensionado.tsx
-│       │   ├── ValidacionesPendientes.tsx
+│       │   ├── AltaPensionado.tsx          ← acepta fechas opcionales para pruebas
+│       │   ├── ExpedientePensionado.tsx    ← incluye revisión de validaciones
+│       │   ├── ValidacionesPendientes.tsx  ← cola global de validaciones en_revision
 │       │   ├── Configuracion.tsx
 │       │   └── Bitacora.tsx
 │       │
 │       ├── [Operador]
-│       │   ├── OperatorDashboard.tsx
-│       │   └── ExpedienteOperador.tsx
+│       │   ├── OperatorDashboard.tsx       ← listado con filtros RF-31/32/33
+│       │   ├── ExpedienteOperador.tsx      ← solo lectura + revisión + notas
+│       │   └── ValidacionesOperador.tsx   ← cola de validaciones del operador
 │       │
 │       ├── [Pensionado]
-│       │   └── PensionerDashboard.tsx
+│       │   └── PensionerDashboard.tsx      ← portal completo con formulario
 │       │
-│       └── ui/                  # Biblioteca de componentes base (Radix + Tailwind)
+│       └── ui/
 │
 ├── context/
-│   └── AuthContext.tsx          # Contexto global de sesión
+│   └── AuthContext.tsx
 │
 ├── lib/
-│   └── supabase.ts              # Cliente Supabase y tipos base
+│   └── supabase.ts
 │
 └── styles/
     ├── index.css
     ├── tailwind.css
-    ├── theme.css                # Variables CSS del design system
+    ├── theme.css
     └── fonts.css
 ```
 
@@ -142,8 +143,9 @@ La aplicación sigue una arquitectura **SPA (Single Page Application)** con sepa
 
 | Componente | Ruta | Función |
 |---|---|---|
-| `OperatorDashboard` | `/operador` | Listado de pensionados activos con filtros por estado y fecha |
-| `ExpedienteOperador` | `/operador/pensionados/:id` | Vista de expediente (solo lectura) con capacidad de revisar validaciones |
+| `OperatorDashboard` | `/operador` | Listado de pensionados activos con filtros por nombre/CURP/número, estado y fecha de próxima validación (RF-31, RF-32, RF-33). Muestra tarjetas de resumen: próximos a vencer, vencidos y en revisión |
+| `ExpedienteOperador` | `/operador/pensionados/:id` | Expediente de solo lectura (sin edición de datos ni cambio de estatus). Tab de historial permite revisar validaciones (RF-34, RF-36) y agregar/editar notas por validación (RF-35) |
+| `ValidacionesOperador` | `/operador/validaciones` | Cola de validaciones `en_revision` con modal de revisión idéntico al del administrador |
 
 ### 5.4 Módulo Pensionado (`/pensionado`)
 
@@ -212,6 +214,15 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 Los archivos se almacenan por ruta relativa en base de datos. Las URLs públicas se generan bajo demanda mediante `createSignedUrl()` con TTL de 1 hora.
 
+#### Políticas del bucket `validaciones`
+ 
+| Política | Operación | Sujeto | Condición |
+|---|---|---|---|
+| `pensionado_upload_validaciones` | INSERT | Pensionado autenticado | Solo en su propia carpeta (`{su_id}/`) |
+| `pensionado_select_validaciones` | SELECT | Pensionado autenticado | Solo su propia carpeta |
+| `internos_select_validaciones` | SELECT | Usuarios internos activos | Todos los archivos |
+| `admin_delete_validaciones` | DELETE | Admin activo | Todos los archivos |
+
 ### Edge Functions
 
 | Función | Propósito |
@@ -226,22 +237,22 @@ El uso de Edge Functions para la creación de usuarios evita exponer la `service
 ## 8. Rutas y navegación
 
 ```
-/                          → Login
+/                             → Login
 │
-├── /admin                 → AdminDashboard          [rol: admin]
-├── /admin/usuarios        → GestionUsuarios         [rol: admin]
-├── /admin/pensionados     → ListaPensionados         [rol: admin]
-├── /admin/pensionados/alta→ AltaPensionado           [rol: admin]
-├── /admin/pensionados/:id → ExpedientePensionado     [rol: admin]
-├── /admin/validaciones    → ValidacionesPendientes   [rol: admin]
-├── /admin/configuracion   → Configuracion            [rol: admin]
-├── /admin/bitacora        → Bitacora                 [rol: admin]
+├── /admin                    → AdminDashboard           [rol: admin]
+├── /admin/usuarios           → GestionUsuarios          [rol: admin]
+├── /admin/pensionados        → ListaPensionados          [rol: admin]
+├── /admin/pensionados/alta   → AltaPensionado            [rol: admin]
+├── /admin/pensionados/:id    → ExpedientePensionado      [rol: admin]
+├── /admin/validaciones       → ValidacionesPendientes    [rol: admin]
+├── /admin/configuracion      → Configuracion             [rol: admin]
+├── /admin/bitacora           → Bitacora                  [rol: admin]
 │
-├── /operador              → OperatorDashboard        [rol: operador]
-├── /operador/validaciones → (pendiente de ruta)      [rol: operador]
-├── /operador/pensionados/:id → ExpedienteOperador    [rol: operador]
+├── /operador                 → OperatorDashboard         [rol: operador]
+├── /operador/validaciones    → ValidacionesOperador      [rol: operador]
+├── /operador/pensionados/:id → ExpedienteOperador        [rol: operador]
 │
-└── /pensionado            → PensionerDashboard       [rol: pensionado]
+└── /pensionado               → PensionerDashboard        [rol: pensionado]
 ```
 
 ---
