@@ -42,8 +42,8 @@ El sistema también debe permitir:
 ### 3.1.3 Registro e inscripción de pensionados
 
 - **RF-12.** El sistema deberá permitir el registro de pensionados.
-- **RF-13.** El sistema deberá permitir al pensionado o al operador cargar una fotografía o escaneo de su credencial oficial.
-- **RF-14.** El sistema deberá validar que la imagen de la credencial tenga un formato permitido, por ejemplo JPG, PNG o PDF.
+- **RF-13.** El sistema deberá permitir al administrador o al operador cargar una fotografía o escaneo de su credencial oficial del pensionado.
+- **RF-14.** El sistema deberá validar que la imagen de la credencial del pensionado tenga un formato permitido, por ejemplo JPG, PNG o PDF.
 - **RF-15.** El sistema deberá almacenar la evidencia documental asociada al expediente del pensionado.
 - **RF-16.** El sistema deberá evitar registros duplicados de pensionados con el mismo CURP o número de pensión.
 - **RF-17.** El sistema deberá permitir consultar el expediente completo de un pensionado.
@@ -89,27 +89,15 @@ El sistema también debe permitir:
 - **RF-35.** El sistema deberá permitir registrar observaciones o comentarios por parte del operador.
 - **RF-36.** El sistema deberá permitir marcar una validación como revisada.
 
-### 3.1.7 Reportes y consultas
+### 3.1.7 Auditoría y trazabilidad
 
-- **RF-37.** El sistema deberá generar un reporte de pensionados con validación vigente.
-- **RF-38.** El sistema deberá generar un reporte de pensionados con validación próxima a vencer.
-- **RF-39.** El sistema deberá generar un reporte de pensionados con validación vencida.
-- **RF-40.** El sistema deberá permitir exportar reportes a PDF o Excel.
-- **RF-41.** El sistema deberá mostrar indicadores generales, por ejemplo:
-    - Total de pensionados registrados
-    - Total con validación vigente
-    - Total con validación vencida
-    - Total pendientes de revisión
-
-### 3.1.8 Auditoría y trazabilidad
-
-- **RF-42.** El sistema deberá registrar bitácora de acciones relevantes realizadas por usuarios internos.
-- **RF-43.** La bitácora deberá registrar al menos:
+- **RF-37.** El sistema deberá registrar bitácora de acciones relevantes realizadas por usuarios internos.
+- **RF-38.** La bitácora deberá registrar al menos:
     - Usuario
     - Acción realizada
     - Fecha y hora
     - Registro afectado
-- **RF-44.** El sistema deberá conservar historial de cambios en la configuración de periodicidad.
+- **RF-39.** El sistema deberá conservar historial de cambios en la configuración de periodicidad.
 
 ### 3.2 Requerimientos No Funcionales
 
@@ -259,5 +247,3 @@ El sistema también debe permitir:
 **Descripción:** Validación de privilegios de usuario antes de permitir el acceso a módulos específicos.
 **Precondiciones:** Intento de acceso a una URL o funcionalidad protegida.
 **Postcondiciones:** Acceso permitido o redirección a mensaje de "Acceso Denegado" según el rol.
-
-## 6. Historial de Cambios
