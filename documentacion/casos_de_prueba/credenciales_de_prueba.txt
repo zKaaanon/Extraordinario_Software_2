@@ -1,0 +1,2 @@
+admin@sistema.com >>> Admin1234!
+operador@sistema.com >>> Operador1234!
